@@ -1,6 +1,5 @@
 import psycopg2
 import pymongo
-
 from sql_nosql import utils
 
 
@@ -11,41 +10,29 @@ def update_age():
 
     Synchronize the values with mongo db, only for updated values."""
 
+    with open('sql_queries/6_update_youngest.sql', 'r') as update_youngest, \
+            open('sql_queries/6_update_oldest.sql', 'r') as update_oldest:
+        update_youngest_query = update_youngest.read()
+        update_oldest_query = update_oldest.read()
+
     with psycopg2.connect(**utils.postgres_config) as client_postgres:
         with client_postgres.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE person as p
-                SET date_of_birth=(current_date - INTERVAL '20 years')
-                WHERE date_of_birth=(
-                SELECT max(date_of_birth) FROM person
-                JOIN city ON person.hometown = city.city 
-                WHERE city.type = 'village') 
-                RETURNING p.first_name, p.last_name, p.date_of_birth
-                """
-            )
-
+            cur.execute(update_youngest_query)
             youngest = cur.fetchone()
 
-            cur.execute(
-                """
-                UPDATE person as p
-                SET date_of_birth=(current_date - INTERVAL '60 years')
-                WHERE date_of_birth=(
-                SELECT min(date_of_birth) FROM person 
-                JOIN city ON person.hometown = city.city 
-                WHERE city.type = 'megapolis') 
-                RETURNING p.first_name, p.last_name, p.date_of_birth
-                """
-            )
-
+            cur.execute(update_oldest_query)
             oldest = cur.fetchone()
 
     with pymongo.MongoClient(**utils.mongo_config) as client_mongo:
         collection = client_mongo.traindb.person
 
-        collection.find_one_and_update({'first_name': youngest[0], 'last_name': youngest[1]}, {'$set': {'date_of_birth': str(youngest[2])}})
-        collection.find_one_and_update({'first_name': oldest[0], 'last_name': oldest[1]}, {'$set': {'date_of_birth': str(oldest[2])}})
+        collection.find_one_and_update(
+            {'first_name': youngest[0], 'last_name': youngest[1]},
+            {'$set': {'date_of_birth': str(youngest[2])}})
+
+        collection.find_one_and_update(
+            {'first_name': oldest[0], 'last_name': oldest[1]},
+            {'$set': {'date_of_birth': str(oldest[2])}})
 
 
 if __name__ == "__main__":

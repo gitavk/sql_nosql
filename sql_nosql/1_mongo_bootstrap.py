@@ -1,8 +1,6 @@
 import random
-
 import pymongo
 from faker import Faker
-
 from sql_nosql import utils
 
 

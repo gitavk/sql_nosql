@@ -1,71 +1,46 @@
 import pprint
-
 import psycopg2
-
 from sql_nosql import utils
 
 
 def simple_queries():
     """Base select"""
 
+    with open('sql_queries/3_person_phone_address.sql', 'r') as person_phone_address, \
+            open('sql_queries/3_top_ten_youngest_persons.sql', 'r') as top_ten_youngest_persons, \
+            open('sql_queries/3_top_ten_oldest_persons.sql', 'r') as top_ten_oldest_persons, \
+            open('sql_queries/3_youngest_person_per_city.sql', 'r') as youngest_person_per_city, \
+            open('sql_queries/3_mean_age_per_city.sql', 'r') as mean_age_per_city:
+        person_phone_address_query = person_phone_address.read()
+        top_ten_youngest_persons_query = top_ten_youngest_persons.read()
+        top_ten_oldest_persons_query = top_ten_oldest_persons.read()
+        youngest_person_per_city_query = youngest_person_per_city.read()
+        mean_age_per_city_query = mean_age_per_city.read()
+
     with psycopg2.connect(**utils.postgres_config) as client_postgres:
         with client_postgres.cursor() as cur:
             # 1) Get records person + phones + address
-            cur.execute(
-                """
-                SELECT p.first_name, p.last_name, 
-                string_agg(DISTINCT phone.number, ', ')  as numbers,
-                string_agg(DISTINCT address.address, ', ')  as addresses
-                FROM person as p
-                LEFT JOIN phone ON p.id = phone.person_id
-                LEFT JOIN address ON p.id = address.person_id
-                GROUP BY p.id
-                """
-            )
+            cur.execute(person_phone_address_query)
             result = cur.fetchall()
             pprint.pprint(result)
 
-            # 2) Get top 10 most younger person
-            cur.execute(
-                """
-                SELECT first_name, last_name, date_of_birth 
-                FROM person ORDER BY date_of_birth DESC LIMIT 10
-                """
-            )
+            # 2) Get top 10 youngest person
+            cur.execute(top_ten_youngest_persons_query)
             result = cur.fetchall()
             pprint.pprint(result)
 
-            # 3) Get top 10 most old person
-            cur.execute(
-                """
-                SELECT first_name, last_name, date_of_birth 
-                FROM person ORDER BY date_of_birth LIMIT 10
-                """
-            )
+            # 3) Get top 10 oldest person
+            cur.execute(top_ten_oldest_persons_query)
             result = cur.fetchall()
             pprint.pprint(result)
 
-            # 4) Get most younger person per city
-            cur.execute(
-                """
-                SELECT p1.first_name, p1.last_name, date_of_birth, hometown 
-                FROM person as p1 JOIN
-                (SELECT hometown, max(date_of_birth) as date_of_birth 
-                FROM person GROUP BY hometown) as p2 
-                USING (date_of_birth, hometown)
-                """
-            )
+            # 4) Get youngest person per city
+            cur.execute(youngest_person_per_city_query)
             result = cur.fetchall()
             pprint.pprint(result)
 
             # 5) Get mean age per city
-            cur.execute(
-                """
-                SELECT hometown, AVG(AGE(date_of_birth)) AS mean_age 
-                FROM person 
-                GROUP BY hometown
-                """
-            )
+            cur.execute(mean_age_per_city_query)
             result = cur.fetchall()
             pprint.pprint(result)
 
