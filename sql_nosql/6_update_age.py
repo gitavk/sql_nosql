@@ -15,13 +15,13 @@ def update_age():
         with client_postgres.cursor() as cur:
             cur.execute(
                 """
-                UPDATE person 
+                UPDATE person as p
                 SET date_of_birth=(current_date - INTERVAL '20 years')
-                WHERE id=(
-                SELECT id FROM person 
+                WHERE date_of_birth=(
+                SELECT max(date_of_birth) FROM person
                 JOIN city ON person.hometown = city.city 
-                WHERE city.type = 'village' 
-                ORDER BY person.date_of_birth DESC LIMIT 1) RETURNING person.first_name, person.last_name, person.date_of_birth
+                WHERE city.type = 'village') 
+                RETURNING p.first_name, p.last_name, p.date_of_birth
                 """
             )
 
@@ -29,13 +29,13 @@ def update_age():
 
             cur.execute(
                 """
-                UPDATE person 
+                UPDATE person as p
                 SET date_of_birth=(current_date - INTERVAL '60 years')
-                WHERE id=(
-                SELECT id FROM person 
+                WHERE date_of_birth=(
+                SELECT min(date_of_birth) FROM person 
                 JOIN city ON person.hometown = city.city 
-                WHERE city.type = 'megapolis' 
-                ORDER BY person.date_of_birth ASC LIMIT 1) RETURNING person.first_name, person.last_name, person.date_of_birth
+                WHERE city.type = 'megapolis') 
+                RETURNING p.first_name, p.last_name, p.date_of_birth
                 """
             )
 

@@ -13,13 +13,13 @@ def simple_queries():
             # 1) Get records person + phones + address
             cur.execute(
                 """
-                SELECT person.*, 
+                SELECT p.first_name, p.last_name, 
                 string_agg(DISTINCT phone.number, ', ')  as numbers,
                 string_agg(DISTINCT address.address, ', ')  as addresses
-                FROM person
-                LEFT JOIN phone ON person.id = phone.person_id
-                LEFT JOIN address ON person.id = address.person_id
-                GROUP BY person.id
+                FROM person as p
+                LEFT JOIN phone ON p.id = phone.person_id
+                LEFT JOIN address ON p.id = address.person_id
+                GROUP BY p.id
                 """
             )
             result = cur.fetchall()
@@ -28,7 +28,8 @@ def simple_queries():
             # 2) Get top 10 most younger person
             cur.execute(
                 """
-                SELECT * FROM person ORDER BY date_of_birth DESC LIMIT 10
+                SELECT first_name, last_name, date_of_birth 
+                FROM person ORDER BY date_of_birth DESC LIMIT 10
                 """
             )
             result = cur.fetchall()
@@ -37,7 +38,8 @@ def simple_queries():
             # 3) Get top 10 most old person
             cur.execute(
                 """
-                SELECT * FROM person ORDER BY date_of_birth LIMIT 10
+                SELECT first_name, last_name, date_of_birth 
+                FROM person ORDER BY date_of_birth LIMIT 10
                 """
             )
             result = cur.fetchall()
@@ -46,11 +48,11 @@ def simple_queries():
             # 4) Get most younger person per city
             cur.execute(
                 """
-                SELECT p1.* FROM person as p1 
-                JOIN (SELECT hometown, max(date_of_birth) as date_of_birth 
+                SELECT p1.first_name, p1.last_name, date_of_birth, hometown 
+                FROM person as p1 JOIN
+                (SELECT hometown, max(date_of_birth) as date_of_birth 
                 FROM person GROUP BY hometown) as p2 
-                ON p1.date_of_birth = p2.date_of_birth 
-                AND p1.hometown = p2.hometown
+                USING (date_of_birth, hometown)
                 """
             )
             result = cur.fetchall()

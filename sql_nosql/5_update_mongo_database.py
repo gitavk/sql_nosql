@@ -12,7 +12,7 @@ def update_mongo_database():
         with client_postgres.cursor() as cur:
             cur.execute(
                 """
-                SELECT * FROM city
+                SELECT city, type FROM city
                 """
             )
             cities = {city[0]: city[1] for city in cur.fetchall()}
